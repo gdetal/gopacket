@@ -48,6 +48,21 @@ func (t OptSocketType) String() string {
 	return "UnknownSocketType"
 }
 
+// OptProtocol is the protocol type used to open the TPacket socket.
+type OptProtocol int
+
+func (t OptProtocol) String() string {
+	switch t {
+	case ProtocolAll:
+		return "ETH_P_ALL"
+	case ProtocolIPv4:
+		return "ETH_P_IP"
+	case ProtocolIPv6:
+		return "ETH_P_IPV6"
+	}
+	return "UnknownProtocol"
+}
+
 // TPacket version numbers for use with NewHandle.
 const (
 	// TPacketVersionHighestAvailable tells NewHandle to use the highest available version of tpacket the kernel has available.
@@ -64,6 +79,15 @@ const (
 	// SocketDgram strips off the link layer when reading packets, and adds
 	// the link layer back automatically on packet writes (coming soon...)
 	SocketDgram = OptSocketType(unix.SOCK_DGRAM)
+	// ProtocolAll is the default protocol. All protocols are received on the
+	// socket.
+	ProtocolAll = OptProtocol(unix.ETH_P_ALL)
+	// ProtocolIPv4 restrict the protocols received on the socket to IPv4
+	// packets.
+	ProtocolIPv4 = OptProtocol(unix.ETH_P_IP)
+	// ProtocolIPv6 restrict the protocols received on the socket to IPv6
+	// packets.
+	ProtocolIPv6 = OptProtocol(unix.ETH_P_IPV6)
 )
 
 // OptInterface is the specific interface to bind to.
@@ -125,6 +149,7 @@ type options struct {
 	pollTimeout    time.Duration
 	version        OptTPacketVersion
 	socktype       OptSocketType
+	protocol       OptProtocol
 	iface          string
 }
 
@@ -136,6 +161,7 @@ var defaultOpts = options{
 	pollTimeout:  DefaultPollTimeout,
 	version:      TPacketVersionHighestAvailable,
 	socktype:     SocketRaw,
+	protocol:     ProtocolAll,
 }
 
 func parseOptions(opts ...interface{}) (ret options, err error) {
@@ -158,6 +184,8 @@ func parseOptions(opts ...interface{}) (ret options, err error) {
 			ret.iface = string(v)
 		case OptSocketType:
 			ret.socktype = v
+		case OptProtocol:
+			ret.protocol = v
 		case OptAddVLANHeader:
 			ret.addVLANHeader = bool(v)
 		default:
